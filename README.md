@@ -185,8 +185,19 @@ Notes:
   `REDIS_HOST`, `docker compose up -d`, then `docker compose rm -sf redis`.
 - From inside the containers, the host machine is reachable as
   `host.docker.internal`.
-- Must-use plugins are loaded from `config/wordpress/mu-plugins`, not from
-  `wp-content/mu-plugins`.
+- Must-use plugins are loaded from `config/wordpress/mu-plugins` through
+  `WPMU_PLUGIN_DIR`, not from `wp-content/mu-plugins`: a bind mount inside
+  the `wp_data` volume would create root-owned directories.
+- PHP 8.4 is the default because WooCommerce's requirements say "tested up
+  to PHP 8.4", although WordPress 7.1 supports PHP 7.4 to 8.5 (set
+  `PHP_VERSION` to try another).
+- WooCommerce requires MySQL 8.0+ or MariaDB 10.6+; the stack uses MariaDB
+  12.3 (LTS).
+- The Redis object cache uses the Redis Object Cache plugin with its bundled
+  Predis client (the image has no phpredis).
+- WooCommerce pages keep English slugs (`/shop/`, `/cart/`, `/checkout/`,
+  `/my-account/`): they are created on activation, before the translation
+  is installed.
 
 Security
 --------
