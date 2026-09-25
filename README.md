@@ -192,8 +192,8 @@ Security
 --------
 
 - Client IP headers: PHP gets only the real client IP (as Caddy sees it) in
-  `REMOTE_ADDR`, `X-Forwarded-For` and `X-Real-IP`, and no `Client-Ip` or
-  `Cf-Connecting-Ip` (a client could forge them): WooCommerce records the
+  `REMOTE_ADDR`, `X-Forwarded-For` and `X-Real-IP`, and no `Client-Ip`,
+  `Cf-Connecting-Ip` or `X-Forwarded-Port` (a client could forge them): WooCommerce records the
   order's customer IP from `X-Real-IP` or `X-Forwarded-For`.
 - No default secrets: compose fails if the required passwords are missing. The
   development template uses public passwords; never use it on a server.
