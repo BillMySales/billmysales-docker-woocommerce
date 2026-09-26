@@ -93,8 +93,11 @@ services:
       PHP_FPM_MAX_SPARE_SERVERS: ${PHP_FPM_MAX_SPARE_SERVERS:-4}
       PHP_FPM_MAX_REQUESTS: ${PHP_FPM_MAX_REQUESTS:-500}
     # Lets WordPress reach services on the host (e.g. an app running locally)
-    # at http://host.docker.internal:<port>, also on Linux.
-    extra_hosts:
+    # at http://host.docker.internal:<port>, also on Linux (Docker Desktop
+    # resolves it anyway). Also in every other container that runs
+    # WordPress: setup, cron and wp (WP-Cron and WooCommerce's Action
+    # Scheduler jobs, e.g. a plugin's webhooks).
+    extra_hosts: &host-access
       - "host.docker.internal:host-gateway"
     volumes:
       - wp_data:/var/www/html
@@ -168,6 +171,7 @@ services:
       WC_CURRENCY: ${WC_CURRENCY:-CLP}
       # www-data's HOME is not writable; WP-CLI needs a cache dir.
       WP_CLI_CACHE_DIR: /tmp/wp-cli-cache
+    extra_hosts: *host-access
     volumes: *wp-volumes
     entrypoint: ["sh", "/usr/local/share/stack/setup.sh"]
     restart: "no"
@@ -184,6 +188,7 @@ services:
       <<: *wp-env
       CRON_INTERVAL: ${CRON_INTERVAL:-60}
       WP_CLI_CACHE_DIR: /tmp/wp-cli-cache
+    extra_hosts: *host-access
     volumes: *wp-volumes
     entrypoint: ["sh", "/usr/local/share/stack/cron.sh"]
     healthcheck:
@@ -273,6 +278,7 @@ services:
     environment:
       <<: *wp-env
       WP_CLI_CACHE_DIR: /tmp/wp-cli-cache
+    extra_hosts: *host-access
     volumes: *wp-volumes
     entrypoint: ["wp"]
     command: ["--info"]
