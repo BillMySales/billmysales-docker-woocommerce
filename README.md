@@ -45,7 +45,8 @@ Production
 ```shell
 cp .env.prod.example .env
 # Fill in WP_URL, SITE_ADDRESS, DB_PASSWORD, DB_ROOT_PASSWORD,
-# WP_ADMIN_PASSWORD, WP_ADMIN_EMAIL and the SMTP_* values.
+# WP_ADMIN_PASSWORD and WP_ADMIN_EMAIL.
+# Recommended: the SMTP_* values (without SMTP_HOST no emails are sent).
 docker compose up -d
 ```
 
@@ -54,8 +55,8 @@ docker compose up -d
 - Behind another TLS-terminating proxy, use `SITE_ADDRESS=:80`; the
   `X-Forwarded-Proto: https` header is enough for WordPress to detect HTTPS.
 - Compose refuses to start while a required value is missing.
-- Configure SMTP: without it WordPress can't send any mail (order emails,
-  password resets).
+- Configure SMTP (recommended, not required): without it WordPress can't send
+  any mail (order emails, password resets); the image has no local mail server.
 - The `backup` profile is enabled by default in the production template.
 - Behind an existing Traefik (no host ports), use `overrides/traefik.yaml`
   (see [Overrides](#overrides)).
@@ -154,7 +155,8 @@ Every variable is documented in `.env.prod.example`. Main groups:
 - **Site and network**: `WP_URL`, `SITE_ADDRESS`, `HTTP_BIND`, `HTTP_PORT`,
   `HTTPS_PORT`.
 - **Credentials**: `DB_PASSWORD`, `DB_ROOT_PASSWORD`, `WP_ADMIN_PASSWORD`,
-  `WP_ADMIN_EMAIL` (required).
+  `WP_ADMIN_EMAIL` (required). The `WP_ADMIN_*` values are only used by the
+  installer: changing them later doesn't change the account.
 - **Versions**: `WC_VERSION`, `WP_VERSION`, `PHP_VERSION`, `CADDY_VERSION`,
   `MARIADB_VERSION`, ...
 - **PHP**: `PHP_MEMORY_LIMIT`, `UPLOAD_MAX_SIZE` (PHP and Caddy),
