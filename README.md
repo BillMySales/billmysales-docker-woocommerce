@@ -8,15 +8,44 @@ hosting). Maintained by [BillMySales](https://www.billmysales.com).
 | Component   | Image                                | Default version      |
 |-------------|--------------------------------------|----------------------|
 | Web server  | `caddy:<ver>-alpine`                 | 2.11                 |
-| WordPress   | `wordpress:<wp>-php<php>-fpm-alpine` | 7.1.2 / PHP 8.4      |
-| WooCommerce | installed by WP-CLI (`setup`)        | latest (dev: 11.1.2) |
+| WordPress   | `wordpress:<wp>-php<php>-fpm-alpine` | 7.1.2 / PHP 8.5      |
+| WooCommerce | installed by WP-CLI (`setup`)        | 11.1.2               |
 | Database    | `mariadb`                            | 12.3 (LTS)           |
 | WP-CLI      | `wordpress:cli-<ver>-php<php>`       | 2.12                 |
 | Redis       | `redis:<ver>-alpine` (optional)      | 8.8                  |
 | Mailpit     | `axllent/mailpit` (optional, dev)    | v1.31                |
 
-All images are official (Docker Official Images, or the vendor's for Mailpit);
-nothing is built locally.
+All images are official (Docker Official Images, or the vendor's for Mailpit)
+and nothing is built locally, except with `overrides/old-php.yaml`, which
+builds `image/Dockerfile` to run PHP 7.4 or 8.0: the official WordPress
+images don't publish those PHP versions for current WordPress releases.
+
+Supported versions
+------------------
+
+Only these combinations are supported: each one was validated with a fresh
+install, a second `up -d` (`setup` safe to repeat), the storefront, cart,
+checkout (block) and Store API answering `200`, the admin login and
+WooCommerce's admin, and no PHP errors in the logs.
+Other combinations may work by changing the variables, but aren't validated.
+
+| WordPress (`WP_VERSION`) | WooCommerce (`WC_VERSION`) | PHP (`PHP_VERSION`) | Image |
+|--------------------------|----------------------------|---------------------|-------|
+| 6.5.5                    | 8.9.5                      | 7.4                 | `overrides/old-php.yaml` |
+| 6.5.5                    | 9.4.5                      | 8.0                 | `overrides/old-php.yaml` |
+| 6.6.2                    | 9.8.7                      | 8.1                 | official |
+| 6.7.2                    | 10.3.8                     | 8.2                 | official |
+| 6.8.3                    | 10.7.0                     | 8.3                 | official |
+| 6.9.4                    | 11.0.1                     | 8.4                 | official |
+| 7.0.4                    | 11.1.2                     | 8.3                 | official |
+| 7.1.2 (default)          | 11.1.2 (default)           | 8.5 (default)       | official |
+
+Every WooCommerce line needs PHP 7.4 or later and a minimum WordPress (8.9 and
+9.0: 6.4, 9.1 to 9.4: 6.5, 9.5 to 9.8: 6.6, 9.9 to 10.3: 6.7, 10.4 to 10.7: 6.8,
+10.8 to 11.0: 6.9, 11.1: 7.0); WooCommerce recommends PHP 8.3 or later.
+
+PHP 7.4 and 8.0 no longer receive security fixes: those rows exist to test
+older sites, not for production.
 
 Requirements
 ------------
@@ -86,9 +115,10 @@ Optional services are enabled with `COMPOSE_PROFILES` in `.env`, e.g.
   (`WP_LOCALE`), sets country and currency, skips the onboarding wizard, sets
   pretty permalinks and removes the sample plugins. It then stores the option
   `docker_stack_initialized`, so later changes made in the admin are kept.
-- `WC_VERSION` empty: the latest WooCommerce is installed once, then updated
-  from the admin as usual. `WC_VERSION` set: that exact version is enforced on
-  every `up` (useful to test a plugin against a given version).
+- `WC_VERSION` empty: `WC_INSTALL_VERSION` (default 11.1.2) is installed once,
+  then WooCommerce is updated from the admin as usual. `WC_VERSION` set: that
+  exact version is enforced on every `up` (useful to test a plugin against a
+  given version).
 - Enables or disables the Redis object cache to match `REDIS_HOST`.
 
 Common commands
@@ -143,6 +173,8 @@ COMPOSE_FILE=compose.yaml:overrides/traefik.yaml:overrides/local-dirs.yaml
 |                              | (`DATA_DIR`, default `./data`) instead of named volumes.          |
 | `overrides/plugin.yaml`      | Mount a plugin from a local directory, editable live              |
 |                              | (`PLUGIN_PATH`, `PLUGIN_NAME`).                                   |
+| `overrides/old-php.yaml`     | Build `image/Dockerfile` (PHP-FPM and WP-CLI) to run PHP 7.4 or   |
+|                              | 8.0 (`PHP_VERSION`, `WP_VERSION`).                                |
 
 A local `compose.override.yaml` (gitignored) is also loaded automatically by
 Docker Compose, for changes specific to one machine.
@@ -157,7 +189,7 @@ Every variable is documented in `.env.prod.example`. Main groups:
 - **Credentials**: `DB_PASSWORD`, `DB_ROOT_PASSWORD`, `WP_ADMIN_PASSWORD`,
   `WP_ADMIN_EMAIL` (required). The `WP_ADMIN_*` values are only used by the
   installer: changing them later doesn't change the account.
-- **Versions**: `WC_VERSION`, `WP_VERSION`, `PHP_VERSION`, `CADDY_VERSION`,
+- **Versions**: `WC_INSTALL_VERSION`, `WC_VERSION`, `WP_VERSION`, `PHP_VERSION`, `CADDY_VERSION`,
   `MARIADB_VERSION`, ...
 - **PHP**: `PHP_MEMORY_LIMIT`, `UPLOAD_MAX_SIZE` (PHP and Caddy),
   `PHP_FPM_MAX_CHILDREN` and the rest of the FPM pool.
@@ -190,9 +222,9 @@ Notes:
 - Must-use plugins are loaded from `config/wordpress/mu-plugins` through
   `WPMU_PLUGIN_DIR`, not from `wp-content/mu-plugins`: a bind mount inside
   the `wp_data` volume would create root-owned directories.
-- PHP 8.4 is the default because WooCommerce's requirements say "tested up
-  to PHP 8.4", although WordPress 7.1 supports PHP 7.4 to 8.5 (set
-  `PHP_VERSION` to try another).
+- PHP 8.5 is the default (WordPress 7.1 supports PHP 7.4 to 8.5; set
+  `PHP_VERSION` to try another). WooCommerce's requirements page says
+  "tested up to PHP 8.4".
 - WooCommerce requires MySQL 8.0+ or MariaDB 10.6+; the stack uses MariaDB
   12.3 (LTS).
 - The Redis object cache uses the Redis Object Cache plugin with its bundled
@@ -229,13 +261,18 @@ What was checked for this stack:
   `setup` `Exited (0)`; a second run makes no changes.
 - Storefront, cart, Store API `200`; REST API `401` without credentials;
   admin login; `/.htaccess` and PHP in `uploads` `403`.
-- Settings changed in the admin survive `setup`; `WC_VERSION` pins the version.
+- Settings changed in the admin survive `setup`; `WC_INSTALL_VERSION` sets the
+  WooCommerce installed on a new site (an update from the admin survives
+  `up`), `WC_VERSION` pins the version on every `up`.
 - SMTP delivered to Mailpit; cron runs due events; Redis enable/disable
   without downtime; backup, retention and restore.
 - HTTPS with `SITE_ADDRESS=localhost` (Caddy internal CA, HTTP/2); production
   defaults (`WP_DEBUG` off, file editor blocked).
 - Overrides: Traefik v3.6 routing with no host ports and HTTPS links, local
-  directories (including backups), a plugin mounted and served live.
+  directories (including backups), a plugin mounted and served live; the same
+  three with `overrides/old-php.yaml` (PHP 7.4), which also passed the cron,
+  mail, Redis and backup/restore checks; the image builds for `linux/amd64`
+  and `linux/arm64`.
 - Not tested: issuing a real Let's Encrypt certificate (needs a public domain).
 
 Resource usage

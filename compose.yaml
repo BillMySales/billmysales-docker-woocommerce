@@ -76,7 +76,7 @@ services:
 
   # PHP-FPM with WordPress. Not published; Caddy talks to it on port 9000.
   wordpress:
-    image: wordpress:${WP_VERSION:-7.1.2}-php${PHP_VERSION:-8.4}-fpm-alpine
+    image: wordpress:${WP_VERSION:-7.1.2}-php${PHP_VERSION:-8.5}-fpm-alpine
     restart: unless-stopped
     logging: *logging
     depends_on:
@@ -154,7 +154,7 @@ services:
   # Safe to repeat; runs on every `up`. The cli and fpm-alpine images share
   # the www-data UID/GID (82).
   setup:
-    image: &wpcli-image wordpress:cli-${WPCLI_VERSION:-2.12}-php${PHP_VERSION:-8.4}
+    image: &wpcli-image wordpress:cli-${WPCLI_VERSION:-2.12}-php${PHP_VERSION:-8.5}
     logging: *logging
     depends_on:
       caddy:
@@ -162,6 +162,7 @@ services:
     environment:
       <<: *wp-env
       WC_VERSION: ${WC_VERSION:-}
+      WC_INSTALL_VERSION: ${WC_INSTALL_VERSION:-11.1.2}
       WP_LOCALE: ${WP_LOCALE:-es_CL}
       WP_TITLE: ${WP_TITLE:-WooCommerce}
       WP_ADMIN_USER: ${WP_ADMIN_USER:-admin}
@@ -175,6 +176,10 @@ services:
     volumes: *wp-volumes
     entrypoint: ["sh", "/usr/local/share/stack/setup.sh"]
     restart: "no"
+    deploy:
+      resources:
+        limits:
+          memory: ${SETUP_MEMORY_LIMIT:-512m}
 
   # Runs WP-Cron (and WooCommerce's Action Scheduler) every CRON_INTERVAL seconds.
   cron:
@@ -282,6 +287,10 @@ services:
     volumes: *wp-volumes
     entrypoint: ["wp"]
     command: ["--info"]
+    deploy:
+      resources:
+        limits:
+          memory: ${CONSOLE_MEMORY_LIMIT:-512m}
 
 volumes:
   db_data:

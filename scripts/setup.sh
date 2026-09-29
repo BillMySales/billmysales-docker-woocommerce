@@ -6,7 +6,7 @@
 # - Initial settings (language, country, currency, permalinks...) are applied
 #   only once, so changes made later in the admin are kept.
 # - WC_VERSION, when set, pins WooCommerce to that exact version on every run;
-#   when empty, the latest version is installed once and then updated from the
+#   when empty, WC_INSTALL_VERSION is installed once and then updated from the
 #   admin as usual.
 # - The Redis object cache is enabled or disabled to match REDIS_HOST.
 set -eu
@@ -36,8 +36,9 @@ fi
 
 current_wc="$(wp plugin get woocommerce --field=version 2>/dev/null || true)"
 if [ -z "${current_wc}" ]; then
-    echo "==> Installing WooCommerce ${WC_VERSION:-(latest)}"
-    wp plugin install woocommerce ${WC_VERSION:+--version="${WC_VERSION}"}
+    wc_install="${WC_VERSION:-${WC_INSTALL_VERSION}}"
+    echo "==> Installing WooCommerce ${wc_install}"
+    wp plugin install woocommerce --version="${wc_install}"
 elif [ -n "${WC_VERSION}" ] && [ "${current_wc}" != "${WC_VERSION}" ]; then
     echo "==> Pinning WooCommerce to ${WC_VERSION} (was ${current_wc})"
     wp plugin install woocommerce --version="${WC_VERSION}" --force

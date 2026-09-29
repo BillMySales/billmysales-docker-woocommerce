@@ -1,0 +1,39 @@
+# Run the store on PHP 7.4 or 8.0, which the official WordPress images don't
+# publish for current WordPress versions. Builds image/Dockerfile (PHP-FPM and
+# WP-CLI in one image) for WordPress, setup, cron and wp. For testing an older
+# PHP only: those versions no longer receive security fixes.
+#
+# In .env:
+#   COMPOSE_FILE=compose.yaml:overrides/old-php.yaml
+#   PHP_VERSION=7.4          # or 8.0
+#   WP_VERSION=6.5.5         # a WordPress version (WP_SHA1 optional)
+# Needs Docker Compose 2.24+.
+
+x-old-php-image: &old-php-image ${WP_IMAGE:-wordpress-stack}:${WP_VERSION:?Set WP_VERSION in .env}-php${PHP_VERSION:?Set PHP_VERSION in .env}
+
+x-old-php-build: &old-php-build
+  context: ./image
+  args:
+    PHP_VERSION: ${PHP_VERSION}
+    WP_VERSION: ${WP_VERSION}
+    WP_SHA1: ${WP_SHA1-}
+    WPCLI_VERSION: ${WPCLI_VERSION_OLD_PHP:-2.12.0}
+    WPCLI_SHA512: ${WPCLI_SHA512-}
+
+services:
+  wordpress:
+    image: *old-php-image
+    build: *old-php-build
+  # The official WP-CLI image runs as www-data (UID/GID 82, also this image's).
+  setup:
+    image: *old-php-image
+    build: *old-php-build
+    user: "82:82"
+  cron:
+    image: *old-php-image
+    build: *old-php-build
+    user: "82:82"
+  wp:
+    image: *old-php-image
+    build: *old-php-build
+    user: "82:82"
